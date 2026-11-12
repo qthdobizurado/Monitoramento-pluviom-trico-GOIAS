@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Monitoramento pluviométrico — Goiás</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1220;--card:#131e30;--line:#2a3a52;--muted:#a4b2c8;--main:#eaf2ff;--accent:#3ac9e5}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0d2039,#09111e 65%);color:var(--main);font:15px system-ui,-apple-system,Segoe UI,Arial,sans-serif;min-height:100vh}
+main{max-width:1500px;margin:0 auto;padding:35px 22px}header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap}h1{font-size:clamp(23px,3vw,34px);margin:0 0 7px}p{color:var(--muted);margin:0}.eyebrow{color:#6de1ef;text-transform:uppercase;letter-spacing:2px;font-size:11px;font-weight:800;margin-bottom:9px}
+button{background:#1c7d9a;color:white;border:1px solid #35bcd2;border-radius:10px;padding:11px 17px;font-weight:700;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.actions{display:flex;gap:9px;flex-wrap:wrap}.secondary{background:#23344d;border-color:#526b88}.logpanel{margin:16px 0;border:1px solid #41617a;background:#101d31;border-radius:12px;padding:15px;display:none}.logpanel.visible{display:block}.loghead{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}.loghead strong{font-size:16px}#logText{width:100%;height:320px;resize:vertical;border:1px solid #3d5570;background:#07111f;color:#c8eaff;padding:12px;border-radius:9px;white-space:pre;font:12px/1.5 Consolas,monospace}.loghelp{font-size:12px;margin:8px 0;color:#b8c6d9}
+.status{margin:25px 0 14px;display:flex;gap:12px;flex-wrap:wrap;align-items:center;color:var(--muted);font-size:13px}.pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:100px;padding:6px 12px;background:#121f31}.dot{width:8px;height:8px;background:#f0ba59;border-radius:50%}.dot.ok{background:#32d19c}.dot.err{background:#ff6c7b}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 14px 50px #0002}.scroll{overflow:auto}table{width:100%;border-collapse:separate;border-spacing:0;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}th,td{padding:17px 14px;border-bottom:1px solid #26364a}thead th{font-size:12px;text-transform:uppercase;letter-spacing:.4px;background:#1c2b40;color:#b7c6d8}td{font-weight:700}td:first-child,th:first-child{text-align:left;position:sticky;left:0;background:#17263a;z-index:1;min-width:330px;max-width:440px;white-space:normal}thead th:first-child{background:#1c2b40;z-index:2}thead th.time-explanation{text-align:center;text-transform:none;font-size:13px;letter-spacing:0;color:#e4f4ff;font-weight:700;white-space:normal;line-height:1.5;padding:13px 16px;border-bottom:1px solid #40546e}tbody tr:last-child td{border-bottom:0}.station{font-weight:750;display:block;line-height:1.35;font-size:13px;overflow-wrap:anywhere}.station small{display:block;font-weight:500;color:#9bacbf;margin-top:4px}.station-reading{display:block;color:#b8c9da;font-size:12px;line-height:1.4;margin-top:6px;font-weight:500}.station-reading strong{font-weight:650;color:#e5effa}.station-delay{display:block;font-size:11px;line-height:1.4;margin-top:4px;color:#b8c9da;font-weight:500}.station-delay.late{color:#ffd08b}.station-delay.cached{color:#ffc6c6}td.no-data{color:#76899f;font-weight:500}td[title]{cursor:help}td.error{color:#ff8f9d;font-weight:500}.foot{display:grid;gap:8px;margin-top:17px;color:var(--muted);font-size:13px;line-height:1.5}.errorbox{margin-top:15px;padding:13px 15px;border:1px solid #894652;background:#40232b;border-radius:9px;color:#ffdce1;display:none}.errorbox.visible{display:block}code{color:#b6f0ff}strong{color:#e5f4ff}@media(max-width:660px){main{padding:20px 10px}th,td{padding:13px 11px}td:first-child,th:first-child{min-width:235px;max-width:280px}}
+
+/* Grade estável: cabeçalho agrupado não altera a largura de 30 MIN. */
+.scroll table{table-layout:fixed;width:100%;min-width:1130px}
+.scroll table col.station-col{width:33.6%}
+.scroll table col.period-col{width:8.3%}
+.scroll table th,.scroll table td{box-sizing:border-box}
+.scroll table th:first-child,.scroll table td:first-child{min-width:0;max-width:none;overflow-wrap:anywhere}
+.scroll table thead tr:nth-child(2) th{text-align:center;white-space:nowrap;padding-left:5px;padding-right:5px}
+.scroll table tbody td:not(:first-child){text-align:center;padding-left:5px;padding-right:5px}
+.scroll table thead th.time-explanation{white-space:normal;overflow-wrap:normal}
+
+/* Correção V8.6: 9 colunas rigidamente definidas, inclusive sob cabeçalho agrupado. */
+.scroll{overflow-x:auto;overflow-y:hidden}
+.scroll>table{table-layout:fixed!important;width:100%!important;min-width:1230px!important;border-collapse:separate}
+.scroll>table>colgroup>col.station-col{width:35%!important}
+.scroll>table>colgroup>col.period-col{width:8.125%!important}
+.scroll>table th,.scroll>table td{box-sizing:border-box!important}
+.scroll>table tbody td:first-child,.scroll>table thead th:first-child{width:auto!important;min-width:0!important;max-width:none!important}
+.scroll>table thead tr:nth-child(2)>th,
+.scroll>table tbody tr>td:not(:first-child){text-align:center!important;padding-left:4px!important;padding-right:4px!important;white-space:nowrap!important}
+.scroll>table thead tr:first-child>th.time-explanation{white-space:normal!important;text-align:center!important;}
+.asterisk{color:#ffff00!important;font-weight:800!important} .foot strong.asterisk{color:#ffff00!important} header{margin-bottom:0}
+
+/* V8.8: cores e dimensões compactas, com layout específico de celular. */
+:root{--asterisk:#ffff00}
+.asterisk,.foot .asterisk{color:var(--asterisk)!important;font-weight:900!important}
+main{max-width:1240px;padding:24px 18px}
+.status{margin:15px 0 12px;gap:8px}
+.panel{max-width:1200px;margin-inline:auto}
+.scroll{overflow-x:auto;overflow-y:hidden}
+.scroll>table{width:100%!important;min-width:850px!important;table-layout:fixed!important}
+.scroll>table>colgroup>col.station-col{width:35%!important}
+.scroll>table>colgroup>col.period-col{width:8.125%!important}
+.scroll>table th,.scroll>table td{padding-top:12px!important;padding-bottom:12px!important}
+.scroll>table thead th.time-explanation{padding:10px 8px!important;font-size:12px!important}
+.scroll>table tbody td:first-child{position:sticky;left:0;z-index:1}
+.station{font-size:12px}.station-reading{font-size:11px}.station-delay{font-size:10px}
+.foot{font-size:12px;margin-top:12px}
+@media(max-width:700px){
+  main{width:100%;padding:14px 10px 24px}
+  .eyebrow{font-size:10px;letter-spacing:1.3px}
+  .status{gap:6px;margin:14px 0 12px;font-size:11px}
+  .pill{padding:5px 8px;gap:5px}
+  .panel{border:0;background:transparent;box-shadow:none;border-radius:0}
+  .scroll{overflow:visible}
+  .scroll>table{display:block;min-width:0!important;width:100%!important}
+  .scroll>table colgroup,.scroll>table thead{display:none}
+  .scroll>table tbody{display:grid;gap:12px}
+  .scroll>table tbody tr{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#131e30}
+  .scroll>table tbody td{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:66px;min-width:0!important;width:auto!important;max-width:none!important;padding:8px 4px!important;border:0;border-top:1px solid #26364a;border-right:1px solid #26364a;text-align:center!important;font-size:13px;white-space:normal!important}
+  .scroll>table tbody td:first-child{position:static;grid-column:1 / -1;background:#1c2b40;min-height:0;text-align:left!important;display:block;padding:13px 12px!important;border:0}
+  .scroll>table tbody td:nth-child(4n+1){border-right:0}
+  .scroll>table tbody td:not(:first-child)::before{content:attr(data-period);display:block;color:#aabed5;font-weight:650;font-size:10px;line-height:1.5;margin-bottom:5px;letter-spacing:.2px}
+  .station{font-size:12px}.station-reading{font-size:11px;margin-top:5px}.station-delay{font-size:11px}
+  .foot{font-size:12px;line-height:1.55}
+}
+@media(max-width:380px){
+  .scroll>table tbody tr{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .scroll>table tbody td{min-height:58px}
+  .scroll>table tbody td:nth-child(4n+1){border-right:1px solid #26364a}
+  .scroll>table tbody td:nth-child(2n+1){border-right:0}
+}
+
+/* V8.9 — tabela proporcional em toda a largura, asteriscos consistentes. */
+@media (min-width:701px){
+  main{max-width:none!important;width:100%;padding:clamp(18px,2.3vw,36px)!important;margin:0 auto}
+  .panel{max-width:none!important;width:100%;margin:0}
+  .scroll>table{width:100%!important;min-width:1020px!important;table-layout:fixed!important;font-size:15px}
+  .scroll>table>colgroup>col.station-col{width:34%!important}
+  .scroll>table>colgroup>col.period-col{width:8.25%!important}
+  .scroll>table th,.scroll>table td{padding:clamp(10px,1.05vw,16px) clamp(5px,.55vw,10px)!important}
+  .scroll>table thead th.time-explanation{padding:12px 8px!important;font-size:clamp(12px,.9vw,14px)!important}
+  .scroll>table thead tr:nth-child(2)>th{font-size:clamp(11px,.78vw,13px)}
+  .station{font-size:clamp(12px,.87vw,14px)}
+  .station-reading{font-size:clamp(11px,.8vw,13px)}
+  .station-delay{font-size:clamp(10px,.74vw,12px)}
+  .scroll>table tbody td:not(:first-child){font-size:15px!important}
+}
+/* Tanto os asteriscos dos números como o da legenda usam a mesma cor e tamanho. */
+.asterisk,.foot .asterisk,.foot strong.asterisk{
+  color:#ffff00!important;
+  font-size:15px!important;
+  line-height:1!important;
+  font-weight:900!important;
+  text-shadow:none!important;
+}
+@media(max-width:700px){
+  .asterisk,.foot .asterisk,.foot strong.asterisk{font-size:13px!important}
+}
+</style>
+</head><body><main>
+<header><div class="eyebrow">Monitoramento pluviométrico</div></header>
+<div class="status"><span class="pill"><span class="dot" id="dot"></span><span id="statusText">Carregando estações…</span></span><span class="pill" id="updated">Última consulta: —</span><span class="pill" id="countdown">Próxima consulta: —</span></div>
+<div class="panel"><div class="scroll"><table><colgroup><col class="station-col"><col class="period-col"><col class="period-col"><col class="period-col"><col class="period-col"><col class="period-col"><col class="period-col"><col class="period-col"><col class="period-col"></colgroup><thead><tr><th rowspan="2">Estação</th><th colspan="8" class="time-explanation">Acumulado de chuva (mm) nos minutos ou horas que antecederam a última medição da estação.</th></tr><tr><th>30 min</th><th>1 h</th><th>2 h</th><th>3 h</th><th>6 h</th><th>12 h</th><th>24 h</th><th>48 h</th></tr></thead><tbody id="rows"></tbody></table></div></div>
+<div class="errorbox" id="errors"></div>
+
+<div class="foot"><div><strong class="asterisk">*</strong> = soma parcial (não é o total confirmado do período); passe o mouse no valor para ver a cobertura e o motivo</div></div>
+</main><script>
+'use strict';
+const VERSION='8.12 - cabeçalho atualizado';
+const STATIONS=[
+ {base:'ana',id:'25100000',fallback:'BALNEÁRIO CACHOEIRA GRANDE',expect:15},
+ {base:'ana',id:'25090000',fallback:'FAZENDA PACIÊNCIA',expect:15},
+ {base:'inmet',id:'A014',fallback:'GOIÁS',expect:60},
+ {base:'rede_alerta',id:'CIMEHGO186',fallback:'Cidade de Goiás - Centro',expect:10}
+];
+const WINDOWS=[30,60,120,180,360,720,1440,2880];
+const PERIOD_LABELS=['30 MIN','1 H','2 H','3 H','6 H','12 H','24 H','48 H'];
+const $=s=>document.querySelector(s);
+const rows=$('#rows'),stat=$('#statusText'),dot=$('#dot'),upd=$('#updated'),cd=$('#countdown'),errors=$('#errors');
+
+const numberFormat=new Intl.NumberFormat('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2});
+const clock=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+const dateHour=new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+const state=new Map();let busy=false,cycle=0,nextUpdate=Date.now();const logEntries=[];
+function log(s){logEntries.push(`[${new Date().toISOString()}] ${s}`);if(logEntries.length>500)logEntries.splice(0,logEntries.length-500);}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function n(v){if(v==null||v===''||String(v).toLowerCase()==='nan')return null;const x=Number(typeof v==='string'?v.replace(',','.'):v);return Number.isFinite(x)&&x>=0?x:null}
+function time(v){if(v==null)return NaN;const t=Date.parse(v);return Number.isFinite(t)?t:NaN}
+function unpack(obj){if(Array.isArray(obj))return obj;for(const k of ['data','records','results','observations','values'])if(Array.isArray(obj?.[k]))return obj[k];throw Error('O servidor retornou formato JSON não reconhecido')}
+function analyze(data,now,station){
+ const raw=unpack(data);
+ const records=raw.map(r=>({t:time(r.time??r.datetime??r.timestamp??r.datahora),p:n(r.prec??r.precipitacao??r.rain??r.chuva),name:r.name??r.nome??r.station_name??''}))
+   .filter(r=>Number.isFinite(r.t)&&r.t<=now+120000).sort((a,b)=>a.t-b.t);
+ const dedup=[...new Map(records.map(r=>[r.t,r])).values()].sort((a,b)=>a.t-b.t);
+ const good=dedup.filter(r=>r.p!==null);
+ const mostRecent=good.at(-1)||null;
+ const name=[...dedup].reverse().find(r=>r.name)?.name||station.fallback;
+ const step=station.expect*60000;
+ const cadence=step;
+ const byTime=new Map(good.map(r=>[r.t,r]));
+ // A leitura 'prec' registra o intervalo que TERMINA no timestamp.
+ // Cada janela é fechada na última leitura válida da própria estação.
+ // Só contam blocos inteiros; não se faz interpolação nem se ignora lacunas.
+ const cells=WINDOWS.map(minutes=>{
+  if(!mostRecent)return {value:null,coverage:0,partial:true,reason:'Sem leitura de precipitação válida',count:0};
+  const windowMs=minutes*60000;
+  if(windowMs<step||windowMs%step!==0)return {value:null,coverage:0,partial:true,reason:`Período de ${minutes} min incompatível com a cadência de ${station.expect} min`,count:0};
+  const wanted=windowMs/step;
+  let found=0,amount=0;
+  const missing=[];
+  for(let i=0;i<wanted;i++){
+   const target=mostRecent.t-i*step;
+   // Tolerância de até 1 min para pequenas variações no relógio da estação.
+   let row=byTime.get(target);
+   if(!row){row=good.find(r=>Math.abs(r.t-target)<=60000)}
+   if(row){found++;amount+=row.p}
+   else if(missing.length<5)missing.push(clock.format(new Date(target)));
+  }
+  const cov=Math.round(found/wanted*100);
+  const partial=found<wanted;
+  const from=mostRecent.t-windowMs;
+  const missingCount=wanted-found;
+  const reason=partial
+    ? `Soma parcial — cobertura: ${found} de ${wanted} medições (${cov}%).\nMotivo: ${missingCount} ${missingCount===1?'medição ausente ou inválida':'medições ausentes ou inválidas'} no período.\nPrimeira lacuna: ${missing[0]}.`
+    : `Soma completa: ${wanted} de ${wanted} medições (100% de cobertura).`;
+  return {value:found?Math.round(amount*1000)/1000:null,coverage:cov,partial,reason,count:found};
+ });
+ return {name,cells,latest:mostRecent,cadence,rawLen:raw.length,valid:good.length};
+}
+function cellHTML(c,index){
+ const period=esc(PERIOD_LABELS[index]);if(c.value===null)return `<td class="no-data" data-period="${period}" title="${esc(c.reason)}">—</td>`;
+ const cls='';
+ return `<td class="${cls}" data-period="${period}" title="${esc(c.reason)}">${numberFormat.format(c.value)}${c.partial?'<span class="asterisk" aria-label="acumulado parcial"> *</span>':''}</td>`}
+function stationTitle(st){
+ const names={
+  '25100000':'BALNEÁRIO CACHOEIRA GRANDE',
+  '25090000':'FAZENDA PACIÊNCIA',
+  'A014':'GOIÁS',
+  'CIMEHGO186':'Cidade de Goiás - Centro'
+ };
+ const network=st.base==='ana'?'ANA':st.base==='inmet'?'INMET':'REDE_ALERTA';
+ return `${names[st.id]||st.fallback} (${network}-${st.id})`;
+}
+function durationText(totalMinutes){
+ const mins=Math.max(0,Math.floor(Number(totalMinutes)||0));
+ const days=Math.floor(mins/1440);
+ const hours=Math.floor((mins%1440)/60);
+ const minutes=mins%60;
+ const parts=[];
+ if(days)parts.push(`${days} ${days===1?'dia':'dias'}`);
+ if(hours)parts.push(`${hours} ${hours===1?'hora':'horas'}`);
+ if(minutes || !parts.length)parts.push(`${minutes} ${minutes===1?'minuto':'minutos'}`);
+ return parts.length>1 ? parts.slice(0,-1).join(', ')+' e '+parts.at(-1) : parts[0];
+}
+function stationHeading(st,latest,delay,late,cached=false,extra=''){
+ const stamp=latest?dateHour.format(new Date(latest.t)):'Sem dados';
+ const delayMsg=latest?`${durationText(delay)} desde a última medição${late?' · DADOS ATRASADOS':''}`:'Aguardando medições';
+ return `<span class="station">${esc(stationTitle(st))}</span>`+
+ `<span class="station-reading"><strong>Última leitura:</strong> ${esc(stamp)}</span>`+
+ `<span class="station-delay${late?' late':''}">${esc(delayMsg)}</span>`+
+ (cached?'<span class="station-delay cached">ÚLTIMA RESPOSTA VÁLIDA (consulta atual falhou)</span>':'')+
+ (extra?`<span class="station-delay cached">${esc(extra)}</span>`:'');
+}
+function show(st,data,now,cached=false,lastError=''){
+ const a=analyze(data,now,st);const delay=a.latest?Math.max(0,Math.round((now-a.latest.t)/60000)):null;
+ const late=delay!==null&&delay>st.expect*2+10;
+ log(`ESTAÇÃO ${st.base}/${st.id} | registros=${a.rawLen} válidos=${a.valid} | cadência=${Math.round(a.cadence/60000)}min | último=${a.latest?new Date(a.latest.t).toISOString():'n/d'} | atraso=${delay??'n/d'}min | referência=${a.latest?dateHour.format(new Date(a.latest.t)):'n/d'} | cache=${cached}`);
+ log(`  acumulados: ${WINDOWS.map((m,i)=>m+'m='+ (a.cells[i].value===null?'—':a.cells[i].value)+(a.cells[i].partial?'*':'')+'(cobertura '+a.cells[i].coverage+'%)').join('; ')}`);
+ if(lastError)log(`  DADOS PRESERVADOS (ERRO NO CICLO ATUAL): ${lastError}`);
+ return `<tr><td>${stationHeading(st,a.latest,delay,late,cached)}</td>${a.cells.map((c,i)=>cellHTML(c,i)).join('')}</tr>`;
+}
+function errorRow(st,msg){return `<tr><td>${stationHeading(st,null,null,false,false,msg)}</td>${WINDOWS.map((_,i)=>`<td class="error" data-period="${PERIOD_LABELS[i]}">Erro</td>`).join('')}</tr>`}
+async function fetchStation(st){
+ const url=`/.netlify/functions/chuva?base=${encodeURIComponent(st.base)}&id=${encodeURIComponent(st.id)}&nocache=${Date.now()}`;
+ const started=performance.now();log(`REQUISIÇÃO ${st.id} GET ${url}`);
+ const control=new AbortController();const timer=setTimeout(()=>control.abort(),24000);
+ try{const r=await fetch(url,{signal:control.signal,cache:'no-store'});const body=await r.text();log(`RESPOSTA ${st.id} HTTP=${r.status} tempo=${Math.round(performance.now()-started)}ms bytes=${body.length}`);
+ let data;try{data=JSON.parse(body)}catch{throw Error(`HTTP ${r.status}: resposta não JSON: ${body.slice(0,150)}`)}
+ if(!r.ok)throw Error(data.error||`HTTP ${r.status}`);
+ if(!Array.isArray(unpack(data)))throw Error('Resposta sem lista');
+ return data;
+ }finally{clearTimeout(timer)}
+}
+async function load(){
+ if(busy)return;busy=true;stat.textContent='Consultando estações…';dot.className='dot';const now=Date.now();
+ log(`VERSÃO ${VERSION} | CICLO ${++cycle} | agora=${new Date(now).toISOString()} | navegador=${location.href}`);
+ const outcomes=await Promise.allSettled(STATIONS.map(fetchStation));let failed=0;const warnings=[];
+ rows.innerHTML=outcomes.map((o,i)=>{const st=STATIONS[i];if(o.status==='fulfilled'){
+   try{const rendered=show(st,o.value,now);state.set(st.id,o.value);return rendered}catch(e){failed++;warnings.push(st.id+': '+e.message);return state.has(st.id)?show(st,state.get(st.id),now,true,e.message):errorRow(st,e.message)}
+  }failed++;const msg=o.reason?.message||String(o.reason);warnings.push(st.id+': '+msg);log(`FALHA ${st.id}: ${msg}`);
+   return state.has(st.id)?show(st,state.get(st.id),now,true,msg):errorRow(st,msg)
+ }).join('');
+ stat.textContent=failed?`${STATIONS.length-failed}/4 consultas OK · ${failed} falha(s)`:'4/4 consultas OK';
+ dot.className='dot '+(failed?'err':'ok');errors.classList.toggle('visible',failed>0);errors.textContent=warnings.join(' | ');
+ upd.textContent='Última consulta: '+clock.format(new Date());log(`FIM CICLO ${cycle}: sucesso=${4-failed}/4; falhas=${JSON.stringify(warnings)}`);
+ busy=false;nextUpdate=Date.now()+60000;
+}
+rows.innerHTML=STATIONS.map(st=>`<tr><td>${stationHeading(st,null,null,false)}</td>${WINDOWS.map((_,i)=>`<td class="no-data" data-period="${PERIOD_LABELS[i]}">…</td>`).join('')}</tr>`).join('');
+log(`Painel versão ${VERSION}; hora local ${new Date().toString()}; userAgent ${navigator.userAgent}`);
+setInterval(()=>{if(!busy&&Date.now()>=nextUpdate)load();cd.textContent=busy?'Consultando…':'Próxima consulta: '+Math.max(0,Math.ceil((nextUpdate-Date.now())/1000))+' s'},1000);
+load();
+
+</script>
+</body></html>
